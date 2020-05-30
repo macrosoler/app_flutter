@@ -14,6 +14,7 @@ class _LoginPageState extends State<PaginaBuscar> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Busqueda por Campos',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -23,68 +24,254 @@ class _LoginPageState extends State<PaginaBuscar> {
 }
 
 class HomePage extends StatefulWidget {
-
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   List<Note> _notes = List<Note>();
+  bool searchContainerExpanded = true;
+  bool isFetching = false;
+  String paramCategoria = "";
+  String paramPais = "";
+  String paramNombre = "";
+  String paramBodega = "";
+  List<String> countries = [""];
 
-  Future<List<Note>> fetchNotes() async {
+  TextEditingController paramCategoriaController = TextEditingController();
+  TextEditingController paramNombreController = TextEditingController();
+  TextEditingController paramBodegaController = TextEditingController();
+
+  Future<List<Note>> fetchNotes(String categoria, String pais, String nombre, String bodega) async {
     var url = "http://190.108.83.146:8080/Iprisco/LlenarArregloStockParametros";
-    var response = await http.post(url,body: {'pais':'Chile','nombre':''}); //Aqui pongo los parametros manual y funciona la consulta
-    var notes = List<Note>();                                               //lo que quiero es que estos parametros pasarlos desde un formulario
-                                                                            //para que sea interactivo.
+    var response = await http.post(url, body: {
+      'categoria': '$categoria',
+      'pais': '$pais',
+      'nombre': '$nombre',
+      'bodega': '$bodega',
+    });
+    var notes = List<Note>();
+    //para que sea interactivo.
     if (response.statusCode == 200) {
       var notesJson = json.decode(response.body);
       for (var noteJson in notesJson) {
         notes.add(Note.fromJson(noteJson));
       }
+    } else {
+      print("statusCode: ${response.statusCode.toString()}");
     }
     return notes;
   }
 
+  void fetchCountries() async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarPais";
+    var response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      var countriesJson = json.decode(response.body);
+      for (var countryJson in countriesJson) {
+        setState(() {
+          countries.add(countryJson["pais"]);
+        });
+      }
+    } else {
+      print("statusCode: ${response.statusCode.toString()}");
+    }
+  }
+
   @override
   void initState() {
-    fetchNotes().then((value) {
-      setState(() {
-        _notes.addAll(value);
-      });
-    });
     super.initState();
+    fetchCountries();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         backgroundColor: Colors.red[900],
-        title: Text('Productos'),
+        title: Text(searchContainerExpanded ? 'Busqueda' : 'Productos'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(searchContainerExpanded ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                if (searchContainerExpanded) {
+                  searchContainerExpanded = false;
+                } else {
+                  searchContainerExpanded = true;
+                }
+              });
+            },
+          )
+        ],
       ),
-      body:
-      _getBodyWidget(),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            searchForm(),
+            _getBodyWidget(),
+          ],
+        ),
+      ),
     );
   }
 
+  Widget searchForm() {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 500),
+      height: searchContainerExpanded ? 500 : 0,
+      padding: EdgeInsets.all(10),
+      child: Column(
+        children: <Widget>[
+          TextFormField(
+            decoration: InputDecoration(
+                hintText: 'Ingresa la Categoria', labelText: 'Busqueda por Categoria:'),
+            controller: paramCategoriaController,
+          ),
 
+
+
+          FormField<String>(
+            builder: (FormFieldState<String> state) {
+              return InputDecorator(
+                decoration: InputDecoration(
+                  errorStyle: TextStyle(color: Colors.redAccent, fontSize: 16.0),
+                  labelText: "Selecciona un Pais",
+                ),
+                isEmpty: paramPais == '',
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    hint: Text('Seleccionar pais'),
+                    value: paramPais,
+                    isDense: true,
+                    onChanged: (String newValue) {
+                      setState(() {
+                        paramPais = newValue;
+                      });
+                    },
+                    items: countries.map((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+           TextFormField(
+             decoration: InputDecoration(
+                 hintText: 'Ingresa el nombre', labelText: 'Busqueda por nombre:'),
+             controller: paramNombreController,
+           ),
+          TextFormField(
+            decoration: InputDecoration(
+                hintText: 'Ingresa la Bodega', labelText: 'Busqueda por Bodega:'),
+            controller: paramBodegaController,
+          ),
+
+          Container(
+            padding: EdgeInsets.all(20),
+            child: isFetching
+                ? Center(
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.red[900]),
+                    ),
+                  )
+                : Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: MaterialButton(
+                          shape: StadiumBorder(),
+                          child: Text(
+                            "Buscar productos".toUpperCase(),
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          color: Colors.red[900],
+                          elevation: 12,
+                          onPressed: () async {
+                            ///Cierra el teclado
+                            FocusScope.of(context).requestFocus(FocusNode());
+
+                            ///Verifica que el campo 'Nombre' no este vacio
+                            /* if (paramNombreController.text.isEmpty) {
+                               Scaffold.of(context).showSnackBar(SnackBar(
+                                 content: Text("Debe agregar un nombre"),
+                               ));
+                               return;
+                             }*/
+
+                            ///muestra el widget 'circularLoader'
+                            setState(() {
+                              isFetching = true;
+                            });
+
+                            ///realiza el request al API
+                            // await fetchNotes(paramPaisController.text)
+                            await fetchNotes(paramCategoriaController.text,paramPais,paramNombreController.text,paramBodegaController.text).then((value) {
+                              setState(() {
+                                _notes.clear();
+                                _notes.addAll(value);
+                                isFetching = false;
+                                searchContainerExpanded = false;
+                              });
+                            }).catchError((error) {
+                              print("error fetching data: $error");
+                              setState(() {
+                                isFetching = false;
+                              });
+                            });
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _getBodyWidget() {
-    return Container(
-      child: HorizontalDataTable(
-        leftHandSideColumnWidth: 100,
-        rightHandSideColumnWidth: 999,
-        isFixedHeader: true,
-        headerWidgets: _getTitleWidget(),
-        leftSideItemBuilder: _generateFirstColumnRow,
-        rightSideItemBuilder: _generateRightHandSideColumnRow,
-        itemCount: _notes.length,
-        rowSeparatorWidget: const Divider(
-          color: Colors.black54,
-          height: 2.0,
-          thickness: 0.0,
-        ),
-      ),
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 500),
+      height: searchContainerExpanded
+          ? 0
+          : MediaQuery.of(context).size.height - AppBar().preferredSize.height,
+      child: _notes.isNotEmpty
+          ? HorizontalDataTable(
+              leftHandSideColumnWidth: 100,
+              rightHandSideColumnWidth: 999,
+              isFixedHeader: true,
+              headerWidgets: _getTitleWidget(),
+              leftSideItemBuilder: _generateFirstColumnRow,
+              rightSideItemBuilder: _generateRightHandSideColumnRow,
+              itemCount: _notes.length,
+              rowSeparatorWidget: const Divider(
+                color: Colors.black54,
+                height: 2.0,
+                thickness: 0.0,
+              ),
+            )
+          : Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  "No encontramos productos en tu busqueda, por favor intenta nuevamente o cambia los criterios de busqueda.",
+                  style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+            ),
 
       //height: MediaQuery.of(CountyList).size.height,
     );
@@ -102,14 +289,14 @@ class _HomePageState extends State<HomePage> {
       _getTitleItemWidget('Formato', 70),
       _getTitleItemWidget('Anada', 55),
       _getTitleItemWidget('Precio', 52),
-
     ];
   }
 
   //Alto de toda la pantalla
   Widget _getTitleItemWidget(String label, double width) {
     return Container(
-      child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+      child: Text(label,
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
       width: width,
       color: Colors.red[900],
       height: 20,
@@ -196,8 +383,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
-
   }
 }
-
-
