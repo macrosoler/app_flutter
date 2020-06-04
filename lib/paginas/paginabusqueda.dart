@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:horizontal_data_table/horizontal_data_table.dart';
 import 'package:limawine/entities/note.dart';
 
+
 class PaginaBuscar extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -37,7 +38,10 @@ class _HomePageState extends State<HomePage> {
   String paramNombre = "";
   String paramBodega = "";
   List<String> countries = [""];
+  List<String> categorias = [""];
 
+
+  TextEditingController paramPaisController = TextEditingController();
   TextEditingController paramCategoriaController = TextEditingController();
   TextEditingController paramNombreController = TextEditingController();
   TextEditingController paramBodegaController = TextEditingController();
@@ -63,10 +67,25 @@ class _HomePageState extends State<HomePage> {
     return notes;
   }
 
-  void fetchCountries() async {
-    var url = "http://190.108.83.146:8080/Iprisco/LlenarPais";
+  void fetchCategoria() async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarCategoria";
     var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var categoriaJson = json.decode(response.body);
+      for (var categoriaJson in categoriaJson) {
+        setState(() {
+          categorias.add(categoriaJson["categoria"]);
+        });
+      }
+    } else {
+      print("statusCode: ${response.statusCode.toString()}");
+    }
+  }
 
+  void fetchCountries() async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarPaisxCategoria";
+    //var url = "http://190.108.83.146:8080/Iprisco/LlenarPais";
+    var response = await http.get(url);
     if (response.statusCode == 200) {
       var countriesJson = json.decode(response.body);
       for (var countryJson in countriesJson) {
@@ -79,10 +98,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
   @override
   void initState() {
     super.initState();
     fetchCountries();
+    fetchCategoria();
   }
 
   @override
@@ -127,13 +148,41 @@ class _HomePageState extends State<HomePage> {
       padding: EdgeInsets.all(10),
       child: Column(
         children: <Widget>[
-          TextFormField(
+          FormField<String>(
+            builder: (FormFieldState<String> state) {
+              return InputDecorator(
+                decoration: InputDecoration(
+                  errorStyle: TextStyle(color: Colors.redAccent, fontSize: 16.0),
+                  labelText: "Selecciona una Categoria",
+                ),
+                isEmpty: paramCategoria == '',
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    hint: Text('Seleccionar Categoria'),
+                    value: paramCategoria,
+                    isDense: true,
+                    onChanged: (String newValue) {
+                      setState(() {
+                        paramCategoria = newValue;
+                      });
+                    },
+                    items: categorias.map((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          /*TextFormField(
             decoration: InputDecoration(
                 hintText: 'Ingresa la Categoria', labelText: 'Busqueda por Categoria:'),
             controller: paramCategoriaController,
-          ),
-
-
+          ),*/
 
           FormField<String>(
             builder: (FormFieldState<String> state) {
@@ -214,7 +263,7 @@ class _HomePageState extends State<HomePage> {
 
                             ///realiza el request al API
                             // await fetchNotes(paramPaisController.text)
-                            await fetchNotes(paramCategoriaController.text,paramPais,paramNombreController.text,paramBodegaController.text).then((value) {
+                            await fetchNotes(paramCategoria,paramPais,paramNombreController.text,paramBodegaController.text).then((value) {
                               setState(() {
                                 _notes.clear();
                                 _notes.addAll(value);
@@ -247,7 +296,7 @@ class _HomePageState extends State<HomePage> {
       child: _notes.isNotEmpty
           ? HorizontalDataTable(
               leftHandSideColumnWidth: 100,
-              rightHandSideColumnWidth: 999,
+              rightHandSideColumnWidth: 740,
               isFixedHeader: true,
               headerWidgets: _getTitleWidget(),
               leftSideItemBuilder: _generateFirstColumnRow,
@@ -280,15 +329,15 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _getTitleWidget() {
     return [
       _getTitleItemWidget('Codigo', 100),
-      _getTitleItemWidget('Categoria', 83),
+      _getTitleItemWidget('Categoria', 89),
       _getTitleItemWidget('Pais', 65),
       _getTitleItemWidget('Region', 110),
       _getTitleItemWidget('Bodega', 135),
-      _getTitleItemWidget('Nombre', 230),
-      _getTitleItemWidget('Origen', 199),
-      _getTitleItemWidget('Formato', 70),
+      _getTitleItemWidget('Nombre', 200),
+   /*   _getTitleItemWidget('Origen', 199),
+      _getTitleItemWidget('Formato', 70),*/
       _getTitleItemWidget('Anada', 55),
-      _getTitleItemWidget('Precio', 52),
+      _getTitleItemWidget('Precio', 85),
     ];
   }
 
@@ -315,12 +364,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
+
   Widget _generateRightHandSideColumnRow(BuildContext context, int index) {
     return Row(
       children: <Widget>[
         Container(
           child: Text(_notes[index].categoria),
-          width: 75,
+          width: 85,
           height: 52,
           padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
           alignment: Alignment.centerLeft,
@@ -353,7 +404,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
           alignment: Alignment.centerLeft,
         ),
-        Container(
+       /* Container(
           child: Text(_notes[index].origen),
           width: 200,
           height: 52,
@@ -366,7 +417,7 @@ class _HomePageState extends State<HomePage> {
           height: 52,
           padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
           alignment: Alignment.centerLeft,
-        ),
+        ),*/
         Container(
           child: Text(_notes[index].anada),
           width: 50,

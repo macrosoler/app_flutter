@@ -58,6 +58,7 @@ flutter:
       - images/LOGO_WM_marcoSOLER_3.png
       - images/LOGO_MARCO_TRABAJO_c_1.jpg
       - images/tarjetas.png
+      - assets/vinos.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

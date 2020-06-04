@@ -8,7 +8,7 @@ class Country {
   final String origen;
   final String formato;
   final String anada;
-  final String precio;
+  final double precio;
 
 
   Country({this.codigo,this.categoria,this.pais,this.region,this.bodega,this.nombre,this.origen,this.formato,this.anada,this.precio});
@@ -24,7 +24,7 @@ class Country {
       origen: json['origen'] as String,
       formato: json['formato'] as String,
       anada: json['anada'] as String,
-      precio: json['precio'] as String,
+      precio: json['precio'] as double,
 
     );
   }

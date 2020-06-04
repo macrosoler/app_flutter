@@ -1,3 +1,4 @@
+
 class Note {
   String codigo;
   String categoria;
