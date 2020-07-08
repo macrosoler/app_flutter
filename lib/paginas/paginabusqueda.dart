@@ -38,6 +38,7 @@ class _HomePageState extends State<HomePage> {
   String paramNombre = "";
   String paramBodega = "";
   List<String> countries = [""];
+  List<String> names = [""];
   List<String> categorias = [""];
 
 
@@ -82,9 +83,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void fetchCountries() async {
-    var url = "http://190.108.83.146:8080/Iprisco/LlenarPaisxCategoria";
+  //Pais
+  void fetchCountries(String categoria) async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarPaisxCategoria?categoria=$categoria";
     //var url = "http://190.108.83.146:8080/Iprisco/LlenarPais";
+
+    ///limpia lista de paises
+    setState(() {
+      countries = [""];
+    });
+
     var response = await http.get(url);
     if (response.statusCode == 200) {
       var countriesJson = json.decode(response.body);
@@ -97,12 +105,31 @@ class _HomePageState extends State<HomePage> {
       print("statusCode: ${response.statusCode.toString()}");
     }
   }
+  //Nombres
+  void fetchNombre(String categoria,pais) async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarNombrexPais?categoria=$categoria&pais=$pais";
+    ///limpia lista de paises
+    setState(() {
+      names = [""];
+    });
 
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var namesJson = json.decode(response.body);
+      for (var nameJson in namesJson) {
+        setState(() {
+          names.add(nameJson["nombre"]);
+        });
+      }
+    } else {
+      print("statusCode: ${response.statusCode.toString()}");
+    }
+  }
+  //Hasta aqui Nombres
 
   @override
   void initState() {
     super.initState();
-    fetchCountries();
     fetchCategoria();
   }
 
@@ -164,8 +191,20 @@ class _HomePageState extends State<HomePage> {
                     onChanged: (String newValue) {
                       setState(() {
                         paramCategoria = newValue;
+                        paramPais = "";
                       });
+
+                      ///realiza fetch de paises por categoria
+                      fetchCountries(paramCategoria);
                     },
+                    /*onChanged: (String newValue) {
+                      setState(() {
+                        paramCategoria = newValue;
+                      });
+
+                      ///realiza fetch de paises por categoria
+                      fetchCountries(paramCategoria);
+                    },*/
                     items: categorias.map((value) {
                       return DropdownMenuItem<String>(
                         value: value,
@@ -202,22 +241,65 @@ class _HomePageState extends State<HomePage> {
                         paramPais = newValue;
                       });
                     },
-                    items: countries.map((value) {
+                    items: countries.isNotEmpty ? countries.map((value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
                       );
-                    }).toList(),
+                    }).toList() : [
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text("No hay paises disponibles"),
+                      )
+                    ],
                   ),
                 ),
               );
             },
           ),
-           TextFormField(
+//---------------
+          FormField<String>(
+            builder: (FormFieldState<String> state) {
+              return InputDecorator(
+                decoration: InputDecoration(
+                  errorStyle: TextStyle(color: Colors.redAccent, fontSize: 16.0),
+                  labelText: "Selecciona un Nombre",
+                ),
+                isEmpty: paramNombre == '',
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    hint: Text('Seleccionar nombre'),
+                    value: paramNombre,
+                    isDense: true,
+                    onChanged: (String newValue) {
+                      setState(() {
+                        paramNombre = newValue;
+                      });
+                    },
+                    items: names.isNotEmpty ? names.map((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList() : [
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text("No hay nombres disponibles"),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+
+
+//--------------
+           /*TextFormField(
              decoration: InputDecoration(
                  hintText: 'Ingresa el nombre', labelText: 'Busqueda por nombre:'),
              controller: paramNombreController,
-           ),
+           ),*/
           TextFormField(
             decoration: InputDecoration(
                 hintText: 'Ingresa la Bodega', labelText: 'Busqueda por Bodega:'),
@@ -263,7 +345,7 @@ class _HomePageState extends State<HomePage> {
 
                             ///realiza el request al API
                             // await fetchNotes(paramPaisController.text)
-                            await fetchNotes(paramCategoria,paramPais,paramNombreController.text,paramBodegaController.text).then((value) {
+                            await fetchNotes(paramCategoria,paramPais,paramNombre,paramBodegaController.text).then((value) {
                               setState(() {
                                 _notes.clear();
                                 _notes.addAll(value);
