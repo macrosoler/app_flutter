@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> {
   String paramNombre = "";
   String paramBodega = "";
   List<String> countries = [""];
-  List<String> names = [""];
+  List<String> nombres = [""];
   List<String> categorias = [""];
 
 
@@ -83,10 +83,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
   //Pais
   void fetchCountries(String categoria) async {
     var url = "http://190.108.83.146:8080/Iprisco/LlenarPaisxCategoria?categoria=$categoria";
-    //var url = "http://190.108.83.146:8080/Iprisco/LlenarPais";
 
     ///limpia lista de paises
     setState(() {
@@ -105,32 +105,32 @@ class _HomePageState extends State<HomePage> {
       print("statusCode: ${response.statusCode.toString()}");
     }
   }
-  //Nombres
-  void fetchNombre(String categoria,pais) async {
-    var url = "http://190.108.83.146:8080/Iprisco/LlenarNombrexPais?categoria=$categoria&pais=$pais";
-    ///limpia lista de paises
-    setState(() {
-      names = [""];
-    });
-
-    var response = await http.get(url);
-    if (response.statusCode == 200) {
-      var namesJson = json.decode(response.body);
-      for (var nameJson in namesJson) {
-        setState(() {
-          names.add(nameJson["nombre"]);
-        });
-      }
-    } else {
-      print("statusCode: ${response.statusCode.toString()}");
-    }
-  }
-  //Hasta aqui Nombres
 
   @override
   void initState() {
     super.initState();
     fetchCategoria();
+  }
+
+
+  //Nombre
+  void fetchNames(String categoria,pais) async {
+    var url = "http://190.108.83.146:8080/Iprisco/LlenarNombrexPais?categoria=$categoria&pais=$pais";
+    ///limpia lista de nombres
+    setState(() {
+      nombres = [""];
+    });
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var namesJson = json.decode(response.body);
+      for (var nombreJson in namesJson) {
+        setState(() {
+          nombres.add(nombreJson["nombre"]);
+        });
+      }
+    } else {
+      //print("statusCode: ${response.statusCode.toString()}");
+    }
   }
 
   @override
@@ -197,14 +197,6 @@ class _HomePageState extends State<HomePage> {
                       ///realiza fetch de paises por categoria
                       fetchCountries(paramCategoria);
                     },
-                    /*onChanged: (String newValue) {
-                      setState(() {
-                        paramCategoria = newValue;
-                      });
-
-                      ///realiza fetch de paises por categoria
-                      fetchCountries(paramCategoria);
-                    },*/
                     items: categorias.map((value) {
                       return DropdownMenuItem<String>(
                         value: value,
@@ -216,12 +208,6 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-
-          /*TextFormField(
-            decoration: InputDecoration(
-                hintText: 'Ingresa la Categoria', labelText: 'Busqueda por Categoria:'),
-            controller: paramCategoriaController,
-          ),*/
 
           FormField<String>(
             builder: (FormFieldState<String> state) {
@@ -240,6 +226,7 @@ class _HomePageState extends State<HomePage> {
                       setState(() {
                         paramPais = newValue;
                       });
+                      fetchNames(paramCategoria,paramPais);
                     },
                     items: countries.isNotEmpty ? countries.map((value) {
                       return DropdownMenuItem<String>(
@@ -258,6 +245,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
 //---------------
+
           FormField<String>(
             builder: (FormFieldState<String> state) {
               return InputDecorator(
@@ -268,25 +256,21 @@ class _HomePageState extends State<HomePage> {
                 isEmpty: paramNombre == '',
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    hint: Text('Seleccionar nombre'),
+                    hint: Text('Seleccionar Nombre'),
                     value: paramNombre,
                     isDense: true,
                     onChanged: (String newValue) {
                       setState(() {
-                        paramNombre = newValue;
+                        //paramPais = newValue;
+                        //paramNombre = "";
                       });
                     },
-                    items: names.isNotEmpty ? names.map((value) {
+                    items: nombres.map((value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
                       );
-                    }).toList() : [
-                      DropdownMenuItem(
-                        value: '',
-                        child: Text("No hay nombres disponibles"),
-                      )
-                    ],
+                    }).toList(),
                   ),
                 ),
               );
@@ -294,12 +278,13 @@ class _HomePageState extends State<HomePage> {
           ),
 
 
+
 //--------------
-           /*TextFormField(
-             decoration: InputDecoration(
-                 hintText: 'Ingresa el nombre', labelText: 'Busqueda por nombre:'),
-             controller: paramNombreController,
-           ),*/
+/*          TextFormField(
+            decoration: InputDecoration(
+                hintText: 'Ingresa el nombre', labelText: 'Busqueda por nombre:'),
+            controller: paramNombreController,
+          ),*/
           TextFormField(
             decoration: InputDecoration(
                 hintText: 'Ingresa la Bodega', labelText: 'Busqueda por Bodega:'),
@@ -310,59 +295,59 @@ class _HomePageState extends State<HomePage> {
             padding: EdgeInsets.all(20),
             child: isFetching
                 ? Center(
-                    child: CircularProgressIndicator(
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.red[900]),
-                    ),
-                  )
+              child: CircularProgressIndicator(
+                valueColor:
+                AlwaysStoppedAnimation<Color>(Colors.red[900]),
+              ),
+            )
                 : Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: MaterialButton(
-                          shape: StadiumBorder(),
-                          child: Text(
-                            "Buscar productos".toUpperCase(),
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          color: Colors.red[900],
-                          elevation: 12,
-                          onPressed: () async {
-                            ///Cierra el teclado
-                            FocusScope.of(context).requestFocus(FocusNode());
+              children: <Widget>[
+                Expanded(
+                  child: MaterialButton(
+                    shape: StadiumBorder(),
+                    child: Text(
+                      "Buscar productos".toUpperCase(),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    color: Colors.red[900],
+                    elevation: 12,
+                    onPressed: () async {
+                      ///Cierra el teclado
+                      FocusScope.of(context).requestFocus(FocusNode());
 
-                            ///Verifica que el campo 'Nombre' no este vacio
-                            /* if (paramNombreController.text.isEmpty) {
+                      ///Verifica que el campo 'Nombre' no este vacio
+                      /* if (paramNombreController.text.isEmpty) {
                                Scaffold.of(context).showSnackBar(SnackBar(
                                  content: Text("Debe agregar un nombre"),
                                ));
                                return;
                              }*/
 
-                            ///muestra el widget 'circularLoader'
-                            setState(() {
-                              isFetching = true;
-                            });
+                      ///muestra el widget 'circularLoader'
+                      setState(() {
+                        isFetching = true;
+                      });
 
-                            ///realiza el request al API
-                            // await fetchNotes(paramPaisController.text)
-                            await fetchNotes(paramCategoria,paramPais,paramNombre,paramBodegaController.text).then((value) {
-                              setState(() {
-                                _notes.clear();
-                                _notes.addAll(value);
-                                isFetching = false;
-                                searchContainerExpanded = false;
-                              });
-                            }).catchError((error) {
-                              print("error fetching data: $error");
-                              setState(() {
-                                isFetching = false;
-                              });
-                            });
-                          },
-                        ),
-                      )
-                    ],
+                      ///realiza el request al API
+                      // await fetchNotes(paramPaisController.text)
+                      await fetchNotes(paramCategoria,paramPais,paramNombre,paramBodegaController.text).then((value) {
+                        setState(() {
+                          _notes.clear();
+                          _notes.addAll(value);
+                          isFetching = false;
+                          searchContainerExpanded = false;
+                        });
+                      }).catchError((error) {
+                        print("error fetching data: $error");
+                        setState(() {
+                          isFetching = false;
+                        });
+                      });
+                    },
                   ),
+                )
+              ],
+            ),
           ),
         ],
       ),
@@ -377,32 +362,32 @@ class _HomePageState extends State<HomePage> {
           : MediaQuery.of(context).size.height - AppBar().preferredSize.height,
       child: _notes.isNotEmpty
           ? HorizontalDataTable(
-              leftHandSideColumnWidth: 100,
-              rightHandSideColumnWidth: 740,
-              isFixedHeader: true,
-              headerWidgets: _getTitleWidget(),
-              leftSideItemBuilder: _generateFirstColumnRow,
-              rightSideItemBuilder: _generateRightHandSideColumnRow,
-              itemCount: _notes.length,
-              rowSeparatorWidget: const Divider(
-                color: Colors.black54,
-                height: 2.0,
-                thickness: 0.0,
-              ),
-            )
+        leftHandSideColumnWidth: 100,
+        rightHandSideColumnWidth: 740,
+        isFixedHeader: true,
+        headerWidgets: _getTitleWidget(),
+        leftSideItemBuilder: _generateFirstColumnRow,
+        rightSideItemBuilder: _generateRightHandSideColumnRow,
+        itemCount: _notes.length,
+        rowSeparatorWidget: const Divider(
+          color: Colors.black54,
+          height: 2.0,
+          thickness: 0.0,
+        ),
+      )
           : Center(
-              child: Container(
-                padding: EdgeInsets.all(20),
-                child: Text(
-                  "No encontramos productos en tu busqueda, por favor intenta nuevamente o cambia los criterios de busqueda.",
-                  style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.justify,
-                ),
-              ),
-            ),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          child: Text(
+            "No encontramos productos en tu busqueda, por favor intenta nuevamente o cambia los criterios de busqueda.",
+            style: TextStyle(
+                color: Colors.grey,
+                fontSize: 20,
+                fontWeight: FontWeight.w500),
+            textAlign: TextAlign.justify,
+          ),
+        ),
+      ),
 
       //height: MediaQuery.of(CountyList).size.height,
     );
@@ -416,7 +401,7 @@ class _HomePageState extends State<HomePage> {
       _getTitleItemWidget('Region', 110),
       _getTitleItemWidget('Bodega', 135),
       _getTitleItemWidget('Nombre', 200),
-   /*   _getTitleItemWidget('Origen', 199),
+      /*   _getTitleItemWidget('Origen', 199),
       _getTitleItemWidget('Formato', 70),*/
       _getTitleItemWidget('Anada', 55),
       _getTitleItemWidget('Precio', 85),
@@ -486,7 +471,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
           alignment: Alignment.centerLeft,
         ),
-       /* Container(
+        /* Container(
           child: Text(_notes[index].origen),
           width: 200,
           height: 52,
