@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
 
 
   //Nombre
-  void fetchNames(String categoria,pais) async {
+  void fetchNames(String categoria, String pais) async {
     var url = "http://190.108.83.146:8080/Iprisco/LlenarNombrexPais?categoria=$categoria&pais=$pais";
     ///limpia lista de nombres
     setState(() {
@@ -192,6 +192,7 @@ class _HomePageState extends State<HomePage> {
                       setState(() {
                         paramCategoria = newValue;
                         paramPais = "";
+                        paramNombre = "";
                       });
 
                       ///realiza fetch de paises por categoria
@@ -226,7 +227,7 @@ class _HomePageState extends State<HomePage> {
                       setState(() {
                         paramPais = newValue;
                       });
-                      fetchNames(paramCategoria,paramPais);
+                      fetchNames(paramCategoria, paramPais);
                     },
                     items: countries.isNotEmpty ? countries.map((value) {
                       return DropdownMenuItem<String>(
@@ -261,8 +262,7 @@ class _HomePageState extends State<HomePage> {
                     isDense: true,
                     onChanged: (String newValue) {
                       setState(() {
-                        //paramPais = newValue;
-                        //paramNombre = "";
+                        paramNombre = newValue;
                       });
                     },
                     items: nombres.map((value) {
